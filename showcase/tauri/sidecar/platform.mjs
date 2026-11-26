@@ -73,7 +73,7 @@ export const hasVoice = (platform) => platform === 'darwin' || platform === 'win
 /** The speech model has to be downloaded first (Parakeet): Windows and Linux. */
 export const needsVoiceModel = (platform) => platform === 'win32' || platform === 'linux';
 
-/** The wake word ("Hey Roamies"): Apple's speech on macOS, the Parakeet helper on Windows and Linux. */
+/** The wake word ("Hey E.V."): Apple's speech on macOS, the Parakeet helper on Windows and Linux. */
 export const hasWakeWord = (platform) => platform === 'darwin' || needsVoiceModel(platform);
 
 /** Whether the hands helper's tools are on: always on macOS (they explain what's missing), elsewhere when the

@@ -25,7 +25,7 @@ let creds = { accessToken: 'sk-or-test', baseUrl: 'https://openrouter.ai/api/v1'
 const auth = { getCredentials: async (p) => (p === 'openrouter' ? creds : null) };
 const make = () => createCatalogs({ auth, dir, fetch: fakeFetch, now: () => t });
 
-assert.deepEqual(CATALOG_PROVIDERS, ['openrouter', 'opencode', 'opencode-go']);
+assert.deepEqual(CATALOG_PROVIDERS, ['openrouter', 'opencode', 'opencode-go', 'command-code']);
 const builtIn = getModelsForProvider('openrouter').map((m) => m.id);
 assert.ok(builtIn.length >= 1, 'gg-core ships at least one OpenRouter model');
 

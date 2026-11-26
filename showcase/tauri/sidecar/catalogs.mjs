@@ -1,17 +1,19 @@
-// OpenRouter's and OpenCode's model lists. gg-core ships only a few rows for each, so the Model menu showed just
-// those; this reads the live lists and caches them so they survive restarts and offline starts.
+// OpenRouter's, OpenCode's and Command Code's model lists. gg-core ships only a few rows for each, so the Model menu
+// showed just those; this reads the live lists and caches them so they survive restarts and offline starts.
 import path from 'node:path';
 import {
   OPENCODE_CATALOG_URLS, OPENROUTER_DEFAULT_BASE_URL, getProviderCatalog, parseOpenCodeCatalog, parseOpenRouterCatalog, setProviderCatalog,
 } from '@kenkaiiii/gg-core';
+import { MODELS_URL as COMMAND_CODE_MODELS_URL, parseCommandCodeCatalog } from './commandcode.mjs';
 import { readJson, writeJson } from './store.mjs';
 
-export const CATALOG_PROVIDERS = ['openrouter', 'opencode', 'opencode-go'];
+export const CATALOG_PROVIDERS = ['openrouter', 'opencode', 'opencode-go', 'command-code'];
 export const REFRESH_MS = 6 * 3600_000;
 export const RETRY_MS = 10 * 60_000;
 
 const OPENROUTER_FIELDS = ['id', 'name', 'context_length', 'supported_parameters', 'architecture', 'reasoning', 'top_provider', 'pricing'];
-const parse = (p, body) => (p === 'openrouter' ? parseOpenRouterCatalog(body) : parseOpenCodeCatalog(p, body)).models;
+const parse = (p, body) => (p === 'command-code' ? parseCommandCodeCatalog(body)
+  : (p === 'openrouter' ? parseOpenRouterCatalog(body) : parseOpenCodeCatalog(p, body)).models);
 
 /** → { load, refresh(provider), refreshStale(connected) }; the last two resolve true when the menu's list changed. */
 export function createCatalogs({ auth, dir, fetch: doFetch = (...a) => fetch(...a), now = Date.now, timeoutMs = 15_000 }) {
@@ -20,6 +22,7 @@ export function createCatalogs({ auth, dir, fetch: doFetch = (...a) => fetch(...
 
   // Where the list comes from: OpenRouter's is the key's own endpoint (a custom base URL lists its own models).
   async function source(p) {
+    if (p === 'command-code') return { url: COMMAND_CODE_MODELS_URL, headers: {} };
     if (p !== 'openrouter') return { url: OPENCODE_CATALOG_URLS[p], headers: {} };
     const creds = await auth.getCredentials('openrouter').catch(() => null);
     const base = (creds?.baseUrl ?? OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');

@@ -8,7 +8,12 @@ assert.deepEqual(cleanWakeName('Hey Jarvis'), { ok: true, name: 'Jarvis' }, 'the
 assert.deepEqual(cleanWakeName('hi, NOVA'), { ok: true, name: 'Nova' });
 assert.equal(cleanWakeName('Zoë').ok, false, 'under 4 letters');
 assert.deepEqual(cleanWakeName('Chloë'), { ok: true, name: 'Chloë' }, 'letters beyond English');
-assert.deepEqual(cleanWakeName(''), { ok: true, name: '' }, 'empty: back to Roamies');
+assert.deepEqual(cleanWakeName(''), { ok: true, name: '' }, 'empty: back to E.V.');
+assert.deepEqual(cleanWakeName('Eve'), { ok: true, name: '' }, 'E.V. is the assistant\'s own name, not a custom one');
+// The name is E.V., said "Ee-vee": every way of typing it means the assistant's own name too.
+for (const own of ['E.V.', 'E. V.', 'e.v', 'Eevee', 'Ee-vee', 'ee vee', 'Evie', 'EV']) {
+  assert.deepEqual(cleanWakeName(own), { ok: true, name: '' }, `${own} is E.V.`);
+}
 assert.deepEqual(cleanWakeName('Roamies'), { ok: true, name: '' });
 assert.deepEqual(cleanWakeName('roamie'), { ok: true, name: '' });
 for (const bad of ['Bob', 'Mr Jarvis', 'R2D2', 'Jar-vis', 'okay', 'Alexa', 'x'.repeat(21)]) {
@@ -16,6 +21,6 @@ for (const bad of ['Bob', 'Mr Jarvis', 'R2D2', 'Jar-vis', 'okay', 'Alexa', 'x'.r
   assert.equal(r.ok, false, `${bad} is refused`);
   assert.ok(r.why.length > 5, 'with a reason');
 }
-assert.equal(wakeName({}), 'Roamies');
+assert.equal(wakeName({}), 'E.V.');
 assert.equal(wakeName({ wakeName: 'Jarvis' }), 'Jarvis');
 console.log('wake name tests: passed');

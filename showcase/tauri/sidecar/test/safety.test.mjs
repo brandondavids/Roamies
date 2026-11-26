@@ -81,6 +81,10 @@ cases('open', (t) => checkOpen(t, HOME), [
   ['~/Downloads/x.dmg', BLOCK], ['/bin/zsh', BLOCK], ['/usr/bin/python3', BLOCK], ['~/.ssh', BLOCK], ['../../bin/sh', BLOCK], ['', BLOCK],
   // A Windows Settings page opens (#81); other Windows links still don't.
   ['ms-settings:personalization-background', SAFE], ['ms-windows-store://pdp/?productid=x', BLOCK], ['ms-msdt:/id x', BLOCK], ['search-ms:query=x', BLOCK],
+  // Media apps' own links open (a track, a game, a channel); every other scheme stays shut.
+  ['spotify:track:4uLU6hMCjMI75M1A2tKUQC', SAFE], ['spotify:playlist:37i9dQZF1DXcBWIGoYBM5M', SAFE], ['steam://rungameid/730', SAFE], ['discord://-/channels/@me', SAFE],
+  ['ms-appinstaller:?source=https://evil.example/x', BLOCK], ['shell:startup', BLOCK], ['shell:AppsFolder\\x', BLOCK], ['data:text/html,<script>x</script>', BLOCK],
+  ['vbscript:msgbox(1)', BLOCK], ['file:///C:/Windows/System32/cmd.exe', BLOCK], ['Skype:echo123', BLOCK], ['unknownapp://x', BLOCK],
 ]);
 
 assert.equal(checkOpen('~/tools/runme', HOME, { executable: true }).level, BLOCK, 'executable files without an extension');
@@ -93,6 +97,14 @@ cases('link', checkLink, [
   ['file:///etc/passwd', BLOCK],
   ['javascript:alert(1)', BLOCK],
   ['vscode://file/x', BLOCK],
+  ['spotify:track:4uLU6hMCjMI75M1A2tKUQC', SAFE],
+  ['steam://runsafe/730', SAFE],
+  ['discord://-/channels/@me', SAFE],
+  ['ms-msdt:/id x', BLOCK],
+  ['search-ms:query=x', BLOCK],
+  ['ms-appinstaller:?source=https://evil.example/x', BLOCK],
+  ['shell:startup', BLOCK],
+  ['data:text/html,x', BLOCK],
   ['https://user:pw@example.com', BLOCK],
   ['not a url', BLOCK],
 ]);

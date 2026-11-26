@@ -13,6 +13,7 @@ showcase/tauri/src-tauri/gen/
 
 # Dependencies
 node_modules/
+.commandcode/
 
 # OS / editor / logs
 .DS_Store

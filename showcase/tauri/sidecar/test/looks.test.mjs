@@ -7,18 +7,19 @@ import { DEFAULT_VOICE } from '../fish.mjs';
 const src = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
 const side = src('../sidekick.mjs'), guide = src('../../../onboarding/onboarding.js');
 const looks = [...side.slice(side.indexOf('const LOOKS = ['), side.indexOf('];', side.indexOf('const LOOKS = ['))).matchAll(/\['(\w+)', '([^']+)', (DEFAULT_VOICE|'(\w+)')\]/g)];
-assert.deepEqual(looks.map((m) => m[1]), ['classic', 'jarvis', 'glayos', 'ultren', 'anime', 'sarah', 'adrian', 'rita']);
+assert.deepEqual(looks.map((m) => m[1]), ['classic', 'jarvis', 'glayos', 'ultren', 'anime', 'sarah', 'adrian', 'rita', 'ev']);
 const voices = Object.fromEntries(looks.map((m) => [m[1], m[4] ?? null]));
 assert.equal(voices.classic, null, 'Roamie uses DEFAULT_VOICE');
 assert.equal(DEFAULT_VOICE, '2680da81de8348a68e1f4dbaa79272f1');
 assert.equal(voices.jarvis, 'e13fa398a7f445a685316a3de6089ce7');
 // Regression: Roamie spoke with JARVIS's voice (the default was JARVIS's ID).
-assert.equal(new Set([DEFAULT_VOICE, ...Object.values(voices).filter(Boolean)]).size, 8, 'every look has its own voice');
+assert.equal(new Set([DEFAULT_VOICE, ...Object.values(voices).filter(Boolean)]).size, 9, 'every look has its own voice');
 assert.ok(!/config\.fishVoice/.test(side), 'a saved fishVoice (the old JARVIS default) is never used');
 assert.equal(voices.anime, 'd8f3b4c1199f4568a767ec54112d2b17');
 assert.equal(voices.sarah, '933563129e564b19a115bedd57b7406a');
 assert.equal(voices.adrian, 'bf322df2096a46f18c579d0baa36f41d');
 assert.equal(voices.rita, '84aadb575ed74e9aa44ba7ab8619d1a1');
+assert.equal(voices.ev, 'f91af65eb0814cf0bab68f73438f1bbb');
 assert.equal(voices.ultren, '06cfdb3653a4496983d6ad77f98cc184');
 assert.equal(voices.glayos, 'ee885900b0874d12b1c3439d1e56cc95');
 for (const [, id, label] of looks) assert.ok(guide.includes(`['${id}', '${label}']`), `the setup guide offers ${label}`);
@@ -49,7 +50,7 @@ assert.deepEqual(warns, [], 'every sprite row is half or whole width');
 const P = window.Roamie.people;
 const th = () => 0.5;
 // ken: Ken Kai, on the About page (drawn the same way, though not a look you can pick).
-for (const who of ['anime', 'sarah', 'adrian', 'rita', 'ultren', 'glayos', 'ken']) for (const size of ['default', 'small', 'cursor']) for (const state of [{}, { mode: 'talk', voice: 0.9 }, { happy: 1 }, { open: 0 }, { dizzy: 1 }, { sleepy: 1 }, { act: 'hype', actA: 0.2 }, { act: 'upset', actA: 0.1 }]) {
+for (const who of ['anime', 'sarah', 'adrian', 'rita', 'ultren', 'glayos', 'ev', 'ken']) for (const size of ['default', 'small', 'cursor']) for (const state of [{}, { mode: 'talk', voice: 0.9 }, { happy: 1 }, { open: 0 }, { dizzy: 1 }, { sleepy: 1 }, { act: 'hype', actA: 0.2 }, { act: 'upset', actA: 0.1 }]) {
   const cells = [];
   const k = { put: (x, y, l) => { assert.ok(Number.isInteger(x) && Number.isInteger(y) && l >= 0 && l <= 4, `${who} ${size} cell`); cells.push([x, y]); }, L: 4, th };
   const st = { t: 1, mode: null, voice: null, act: null, actA: 0, open: 1, look: [0.5, -0.3], vx: 0, sq: 0, wide: 0, dizzy: 0, happy: 0, sleepy: 0, mouth: null, brow: null, ...state };
@@ -59,6 +60,18 @@ for (const who of ['anime', 'sarah', 'adrian', 'rita', 'ultren', 'glayos', 'ken'
   assert.ok(span < (size === 'default' ? 40 : 24), `${who} ${size} stays its size (${span})`);
 }
 assert.ok(!looks.some((m) => m[1] === 'ken'), 'Ken is not a pickable look');
+
+// E.V.'s lenses: dark while she's quiet, lit while she talks (the mask's only light).
+{
+  const lens = (state) => {
+    const cells = [];
+    const k = { put: (x, y, l) => cells.push(l), L: 4, th };
+    P.ev.body(k, 50, 50, 12.75, { t: 1, mode: null, voice: null, act: null, actA: 0, open: 1, look: [0, 0], vx: 0, sq: 0, wide: 0, dizzy: 0, happy: 0, sleepy: 0, mouth: null, brow: null, ...state });
+    return cells;
+  };
+  assert.ok(!lens({}).includes(4), 'the lenses are dark while she is quiet');
+  assert.ok(lens({ mode: 'talk', voice: 0.9 }).includes(4), 'the lenses light up while she talks');
+}
 console.log('looks tests: passed');
 
 // Regression: a selected stage canvas showed as a grey box around the Roamie (WebKit tints selected canvases).
@@ -86,7 +99,7 @@ assert.match(src('../../../desktop.html'), /canvas \{[^}]*-webkit-user-select: n
 }
 
 // Regression: the cheer (hype) stuttered on the characters: the kit's hop plus one of their own at another rate.
-for (const who of ['anime', 'sarah', 'adrian', 'rita', 'ultren', 'glayos']) {
+for (const who of ['anime', 'sarah', 'adrian', 'rita', 'ultren', 'glayos', 'ev']) {
   const tops = new Set();
   for (const actA of [0, 0.1, 0.2, 0.3, 0.45]) {
     let top = Infinity;

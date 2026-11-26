@@ -38,7 +38,7 @@ voice, keeps track of what you said you'd do and nudges you when it's due.
 - **It remembers.** What you said you'd do, reminders down to the second (or on repeat: "every weekday at 9", "every 2 hours"), and what matters to you.
 - **It draws on your screen.** Rings the exact button to click, walks you through each step, and sketches answers beside what you're reading.
 - **It does the clicking.** Opens apps, sites and files, and clicks or types in other apps for you (on Linux this needs the hands helper, which is Hyprland only for now).
-- **Your subscriptions.** Sign in with Claude or ChatGPT, or use an API key (Gemini, Grok, Kimi Code and more).
+- **Your subscriptions.** Sign in with Claude or ChatGPT, or use an API key (Gemini, Grok, Kimi Code, Command Code and more).
 
 | Pick your Roamie | What you get                                            |
 | ---------------- | ------------------------------------------------------- |
@@ -50,6 +50,7 @@ voice, keeps track of what you said you'd do and nudges you when it's due.
 | Sarah            | A pixel woman                                           |
 | Adrian           | A pixel man                                             |
 | Rita X           | A pixel secretary in cat-eye glasses                    |
+| **E.V.**         | A floating spider-web                                   |
 
 <sub>Each one has its own name, voice and animations, in three sizes: Default, Small, or Cursor, a pixel pointer that rides along with your mouse.</sub>
 

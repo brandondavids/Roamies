@@ -5,6 +5,8 @@
 import { AuthStorage, apiKeyStorageKeys, getModelsForProvider, providerStorageKeys } from '@kenkaiiii/gg-core';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+// Registers Command Code (a provider gg-core doesn't ship) before AUTH_PROVIDERS is read below and in sidekick.mjs.
+import './commandcode.mjs';
 
 // Its folder (~/.gg) is made first: since data moved to ~/Roamies nothing else makes it, and saving a key on a fresh
 // install failed on the lock file beside auth.json (E30, #121, #123).
@@ -33,6 +35,7 @@ export const KEY_LINKS = {
   openrouter: 'https://openrouter.ai/settings/keys', huggingface: 'https://huggingface.co/settings/tokens',
   // One OpenCode Console makes the keys for both: Go is the subscription, OpenCode the pay-per-token credits.
   'opencode-go': 'https://opencode.ai/console', opencode: 'https://opencode.ai/console',
+  'command-code': 'https://commandcode.ai/settings/keys',
 };
 const SIGN_IN_NAMES = { anthropic: ['Claude', 'Anthropic'], openai: ['ChatGPT', 'OpenAI'] };
 // Short enough for a one-line card; gg-core's labels ("Token Plan") don't say whose.

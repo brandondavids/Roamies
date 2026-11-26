@@ -222,7 +222,7 @@
         rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] === '#') for (let a = 0; a < sc; a++) for (let b = 0; b < sc; b++) put(x0 + 2 + i * sc + b, y0 + 2 + j * sc + a, ink); });
       };
       const drawHands = (bx, by) => {
-        if (arms < 0.12 || form === 'cursor' || look === 'jarvis') return;
+        if (arms < 0.12 || form === 'cursor' || look === 'jarvis' || look === 'ev') return;
         // Floating mitts, no arms: they pop out of the body edge and stay readable over it.
         const hr = Math.max(2, Math.round(((R * 0.25) / P) * Math.min(1, arms * 1.25)));
         for (const h of hands) {

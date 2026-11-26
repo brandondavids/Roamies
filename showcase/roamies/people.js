@@ -15,6 +15,7 @@
 (() => {
   const R = window.Roamie;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const TAU = Math.PI * 2;
   const LV = { h: 1, H: 2, s: 3, S: 4, z: 2, c: 2, C: 1, k: 3, w: 4, t: 1, T: 2, 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 };
   const SWING = new Set(['t', 'T']);
 
@@ -337,7 +338,7 @@
       const lx = Math.round(clamp(st.look[0], -1, 1) * (size === 'L' ? 1.2 : 0.6)), ly = Math.round(clamp(st.look[1], -1, 1) * (size === 'L' ? 0.8 : 0.4));
       // With no mouth, the eye talks: it opens wide on the loud parts of the voice.
       const talks = a.mouth == null && st.mode === 'talk' && lvl > 0.45;
-      const state = st.dizzy > 0.5 ? 'dizzy' : st.sleepy > 0.5 ? 'sleepy' : st.happy > 0.5 ? 'happy' : st.open < 0.35 && !talks ? 'shut' : st.wide > 0.5 || talks ? 'wide' : 'open';
+      let state = st.dizzy > 0.5 ? 'dizzy' : st.sleepy > 0.5 ? 'sleepy' : st.happy > 0.5 ? 'happy' : st.open < 0.35 && !talks ? 'shut' : st.wide > 0.5 || talks ? 'wide' : 'open';
       // With no brows (the one-eyed head), the eye itself narrows when angry and dims when sad.
       const E = (state === 'open' && a.oneEye && EYES[who][size][st.brow]) || EYES[who][size][state];
       const ex = a.eye[0], ey = y + a.eye[1] + ly - (state === 'wide' ? 1 : 0);
@@ -397,5 +398,128 @@
     },
   });
 
-  R.people = { anime: person('anime'), sarah: person('sarah'), adrian: person('adrian'), rita: person('rita'), ultren: person('ultren'), glayos: person('glayos'), ken: person('ken') };
+  // E.V.: a holographic spider-web, drawn like JARVIS's globe instead of a pixel body. Spokes and sagging silk
+  // rings turn, breathe and lean toward the cursor; the voice runs waves of light out along the threads; and the
+  // spider itself sits bright at the centre, bobbing as she talks. Hype or upset tingles it: spider-sense, a
+  // white shockwave bursting outward through the web. The cursor form is a small web reticle round the spider.
+  const evLook = {
+    // Voice level: the real voice while it plays, a lively synthetic one while it talks, the mic while listening.
+    level(st) {
+      if (st.mode === 'talk' && st.voice != null) return clamp(st.voice * 1.4, 0, 1);
+      if (st.mode === 'talk') return clamp(0.5 + 0.5 * Math.sin(st.t * 13) * Math.abs(Math.sin(st.t * 3.1 + 1)), 0, 1);
+      if (st.mode === 'listen') return clamp(st.heard ?? 0.35, 0.1, 1);
+      return 0;
+    },
+
+    body(k, cx, cy, rad, st) {
+      const { L, th } = k, t = st.t, v = this.level(st), A = st.act;
+      const put = (x, y, l) => k.put(Math.round(x), Math.round(y), l); // the raw put needs whole cells
+      const sleepy = st.sleepy > 0.5, dizzy = st.dizzy > 0.5;
+      // The web breathes, swells with the voice, wobbles dizzy, trembles upset, and leans toward the cursor.
+      let R = rad * 1.02 * (1 + 0.015 * Math.sin(t * 1.4) + (st.mode === 'talk' ? v * 0.07 : 0));
+      if (dizzy) R *= 1 + Math.sin(t * 7) * 0.05;
+      const spinRate = st.mode === 'think' ? 1.5 : A === 'hype' ? 2.4 : sleepy ? 0.1 : 0.3;
+      st.spin = (st.spin ?? 0) + spinRate * (st.dt ?? 0.016);
+      const shake = A === 'upset' && st.actA % 0.9 < 0.32 ? Math.sin(t * 48) * 0.8 : 0;
+      const ox = st.look[0] * rad * 0.14 + shake, oy = st.look[1] * rad * 0.12;
+      const dim = sleepy ? 0.55 : 1;
+      const spokes = rad >= 9 ? 10 : 8, rings = rad >= 9 ? 5 : 4, SAG = 0.15;
+      // A wave of light runs outward along the threads on the voice; idle, the web just breathes.
+      const wave = st.mode === 'talk' || st.mode === 'listen' ? (t * (4.5 + v * 5)) % (R + 4) : -10;
+      // Spider-sense: on hype or upset a shockwave bursts outward through the web, brighter than everything.
+      const sense = (A === 'hype' || A === 'upset') ? (st.actA * 10) % (R * 1.7) : -10;
+      // The projection fades at the bottom, more each row, like the pixel looks (and the notch's plain threshold).
+      const put2 = (x, yy, lv) => {
+        const depth = (yy - (cy + R * 0.55)) / (R * 0.5);
+        if (depth > 0.85 && th(Math.round(x), Math.round(yy)) < (depth - 0.85) * 3) return;
+        put(x, yy, Math.max(1, Math.min(L, Math.round(lv * dim))));
+      };
+      const lvAt = (r, edge) => {
+        let lv = 2;
+        if (edge) lv = 3;
+        if (Math.abs(r - wave) < 0.9) lv = 3;
+        if (Math.abs(r - wave) < 0.45 && v > 0.55) lv = 4;
+        if (Math.abs(r - sense) < 1) lv = L - 1;
+        return lv;
+      };
+      // Spokes, from the spider's edge out to the rim.
+      for (let s = 0; s < spokes; s++) {
+        const a = st.spin + (s * TAU) / spokes, ca = Math.cos(a), sa = Math.sin(a);
+        for (let r = R * 0.24; r <= R; r += 0.8) {
+          const edge = Math.abs(r - (R * Math.round((r / R) * rings)) / rings) < 0.3;
+          put2(cx + ox + ca * r, cy + oy + sa * r, lvAt(r, edge));
+        }
+      }
+      // Rings: arcs between the spokes, sagging toward the centre like real silk.
+      for (let j = 1; j <= rings; j++) {
+        const rj = (R * j) / rings;
+        for (let s = 0; s < spokes; s++) {
+          const a0 = st.spin + (s * TAU) / spokes;
+          const x0 = cx + ox + Math.cos(a0) * rj, y0 = cy + oy + Math.sin(a0) * rj;
+          const x1 = cx + ox + Math.cos(a0 + TAU / spokes) * rj, y1 = cy + oy + Math.sin(a0 + TAU / spokes) * rj;
+          const n = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.8));
+          for (let i = 0; i <= n; i++) {
+            const u = i / n, sag = 1 - SAG * Math.sin(Math.PI * u);
+            const px = x0 + (x1 - x0) * u, py = y0 + (y1 - y0) * u;
+            put2(cx + (px - cx) * sag, cy + (py - cy) * sag, lvAt(rj, false));
+          }
+        }
+      }
+      // The spider: bright at the centre, bobbing while she talks, drooping asleep, flashing with spider-sense.
+      const big = rad >= 9;
+      const GL = big
+        ? ['#.....#', '.#...#.', '..###..', '.#####.', '..###..', '...#...']
+        : ['.#.#.', '..#..', '.###.', '..#..'];
+      const bob = st.mode === 'talk' ? Math.sin(t * 3.2) * 0.5 * (0.4 + v) : Math.sin(t * 1.2) * 0.25;
+      const droop = sleepy ? 1.4 : 0;
+      const sx = cx + ox, sy = cy + oy + bob + droop;
+      const flash = (A === 'hype' || A === 'upset') && st.actA % 0.8 < 0.4;
+      GL.forEach((row, j) => {
+        for (let i = 0; i < row.length; i++) {
+          if (row[i] !== '#') continue;
+          const x = sx - (row.length - 1) / 2 + i, yy = sy - (GL.length - 1) / 2 + j;
+          const leg = j === 0 || j === GL.length - 1 || i === 0 || i === row.length - 1;
+          put2(x, yy, flash ? L - 1 : leg ? 3 : st.mode === 'talk' || st.mode === 'listen' ? 4 : 2);
+        }
+      });
+      // Thinking: a dot of light chasing round the rim, like the HUD scanning.
+      if (st.mode === 'think') for (let i = 0; i < 8; i++) {
+        const a = t * 3 - i * 0.09;
+        put2(cx + ox + Math.cos(a) * (R + 1.5), cy + oy + Math.sin(a) * (R + 1.5), i < 3 ? L - 1 : 2);
+      }
+    },
+
+    // Cursor form: a mini web reticle round the spider — eight silk arcs on spoke ticks that turn while it works,
+    // pushed out by the voice. The spider is a bright cross that blinks closed and droops asleep.
+    cursor(k, cx, cy, hx, hy, st) {
+      const { L } = k, t = st.t, v = this.level(st), A = st.act;
+      const put = (x, y, l) => k.put(Math.round(x), Math.round(y), l); // the raw put needs whole cells
+      const busy = st.mode === 'think' || st.mode === 'talk' || st.mode === 'listen' || !!A;
+      st.spin = (st.spin ?? 0) + (st.mode === 'think' ? 2.2 : busy ? 0.9 : 0.15) * (st.dt ?? 0.016);
+      const r = 4.6 + (st.mode === 'talk' || st.mode === 'listen' ? v * 1.2 : 0) + (A === 'hype' ? Math.abs(Math.sin(st.actA * 6.5)) * 0.9 : 0);
+      for (let i = 0; i < 64; i++) {
+        if (i % 8 < 2) continue; // gaps so the ring reads as silk between the spokes
+        const a = (i / 64) * TAU + st.spin;
+        put(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 3);
+      }
+      for (let s = 0; s < 8; s++) {
+        const a = st.spin + (s * TAU) / 8;
+        for (let d = 1.7; d <= 3.3; d += 0.8) put(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 2);
+      }
+      const sleepy = st.sleepy > 0.5;
+      if (sleepy) put(cx, cy, 2);
+      else if (st.open < 0.35) { put(cx - 1, cy, L - 1); put(cx, cy, L); put(cx + 1, cy, L - 1); }
+      else {
+        put(cx, cy, L); put(cx, cy + 1, L - 1); put(cx, cy - 1, L - 1);
+        put(cx - 2, cy - 1, 2); put(cx + 2, cy - 1, 2); put(cx - 2, cy + 1, 2); put(cx + 2, cy + 1, 2);
+        if (st.mode === 'talk' && v > 0.55) { put(cx - 1, cy + 1, 2); put(cx + 1, cy + 1, 2); }
+      }
+      // The hotspot: a short bright tick from the tip toward the ring.
+      const dx = cx - hx, dy = cy - hy, n = Math.hypot(dx, dy) || 1;
+      for (let i = 0; i <= 2; i++) put(hx + (dx / n) * i, hy + (dy / n) * i, i === 0 ? L : L - 1);
+      if (st.mode === 'think') { const a = t * 5; put(cx + Math.cos(a) * r, cy + Math.sin(a) * r, L); }
+    },
+  };
+
+  R.people = { anime: person('anime'), sarah: person('sarah'), adrian: person('adrian'), rita: person('rita'), ultren: person('ultren'), glayos: person('glayos'), ev: evLook, ken: person('ken') };
 })();

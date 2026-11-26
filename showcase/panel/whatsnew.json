@@ -38,6 +38,7 @@
       "version": "0.1.49",
       "date": "2026-11-21",
       "items": [
+        { "kind": "new", "title": "Meet E.V.", "text": "A Spider-Man mask with her own voice. Say \"Hey E.V.\" or \"E.V.\" to talk." },
         { "kind": "fixed", "title": "ChatGPT works again", "text": "Every ChatGPT and OpenAI message failed with E20. Fixed. Thanks matts-2539!" },
         { "kind": "new", "title": "Text-only subagents", "text": "Subagents can use models that can't see images, like NVIDIA's coding models." },
         { "kind": "fixed", "title": "Smooth capsule on Linux", "text": "On Linux, the capsule flashed black stripes as it opened. Fixed. Thanks sakartvelo11!" },

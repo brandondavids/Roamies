@@ -407,6 +407,10 @@ export function classifyCommand(cmd, home, { exists, cwd: start = null, own = nu
 const RUNNABLE = /\.(app|command|sh|bash|zsh|tool|terminal|scpt|scptd|applescript|workflow|action|pkg|mpkg|dmg|jar|py|rb|pl|js|mjs|exe|bat|cmd|ps1|shortcut|mobileconfig|kext|plugin|prefPane|saver|desktop|appimage|deb|rpm|run|flatpakref|flatpak|snap)\/?$/i;
 // Where installed apps live: opening one there just starts it. Linux lists them as .desktop files.
 const APP_DIRS = ['/Applications/', '/System/Applications/', '/System/Library/CoreServices/', '/usr/share/applications/', '/usr/local/share/applications/', '/var/lib/flatpak/exports/share/applications/', '/var/lib/snapd/desktop/applications/'];
+// Media and chat apps' own links (a track, a game, a channel): they only show something in a program the user
+// already has. Every other scheme stays blocked: ms-msdt:, search-ms:, ms-appinstaller:, file:, shell:, javascript:
+// and data: have run code, and any program can claim a scheme.
+const APP_LINKS = new Set(['spotify', 'steam', 'discord']);
 
 /** open: websites and mail, documents and folders, and apps by name. Not scripts, installers or odd links. */
 export function checkOpen(target, home, { executable = false } = {}) {
@@ -417,7 +421,8 @@ export function checkOpen(target, home, { executable = false } = {}) {
   if (scheme && !/^[a-z]:\\/i.test(t)) {
     if (scheme === 'http' || scheme === 'https' || scheme === 'mailto') return verdict(SAFE);
     if (scheme === 'ms-settings') return verdict(SAFE); // a page of Windows Settings, nothing that runs (#81)
-    return verdict(BLOCK, `I only open web and mail links, not ${scheme}: links.`);
+    if (APP_LINKS.has(scheme)) return verdict(SAFE); // a track, a game or a channel in the app that claims it
+    return verdict(BLOCK, `I only open web, mail and ${[...APP_LINKS].join('/')} links, not ${scheme}: links.`);
   }
   if (/^[~/.]/.test(t) || /^[a-z]:\\/i.test(t)) {
     const abs = norm(t, home);
@@ -473,12 +478,15 @@ export async function checkFetch(url, { lookup = dns.lookup } = {}) {
   return verdict(SAFE);
 }
 
-/** A link the user clicked in a reply: opened in their browser, so web and mail links only (no file:, apps or scripts). */
+/** A link the user clicked in a reply: opened in their browser or the app that claims it, so web, mail and the
+ *  media apps' own links only (no file:, shell: or scripts). */
 export function checkLink(url) {
   let u;
   try { u = new URL(String(url)); } catch { return verdict(BLOCK, "That isn't a valid link."); }
+  const scheme = u.protocol.replace(/:$/, '');
   if (u.protocol === 'mailto:') return verdict(SAFE);
-  if (u.protocol !== 'http:' && u.protocol !== 'https:') return verdict(BLOCK, 'Only web and email links open from a reply.');
+  if (APP_LINKS.has(scheme)) return verdict(SAFE);
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return verdict(BLOCK, 'Only web, email and app links open from a reply.');
   if (u.username || u.password) return verdict(BLOCK, 'Links with passwords in them are blocked.');
   return verdict(SAFE);
 }

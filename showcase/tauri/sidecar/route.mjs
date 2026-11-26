@@ -91,6 +91,7 @@ const PROVIDER_WORDS = {
   anthropic: ['claude', 'anthropic'], openai: ['openai', 'chatgpt', 'gpt'], gemini: ['gemini', 'google'], 'gemini-api': ['gemini'],
   xai: ['grok', 'xai'], moonshot: ['kimi', 'moonshot'], 'kimi-code': ['kimi'], glm: ['glm', 'zhipu'], minimax: ['minimax'],
   xiaomi: ['mimo', 'xiaomi'], 'xiaomi-credits': ['mimo'], deepseek: ['deepseek'], sakana: ['fugu', 'sakana'], openrouter: ['openrouter'],
+  'command-code': ['command code', 'commandcode'],
 };
 // Words in model names that say nothing about which model it is.
 const GENERIC = new Set(['claude', 'gpt', 'model', 'models', 'fast', 'preview', 'code', 'the', 'and', 'pro', 'max', 'ultra', 'plus', 'mini', 'lite', 'flash', 'high', 'speed', 'highspeed', 'ultraspeed', 'latest', 'new', 'turbo', 'free', 'instruct', 'chat']);

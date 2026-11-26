@@ -8,7 +8,8 @@
 // what was said, as on macOS (Windows only). On Wayland no app can watch the keyboard, so there {"cmd":"toggle"}
 // (sent for `roamies --talk`, which people bind to a key) starts a take, and sends it when it comes again or on a
 // pause. With the wake word on, the mic stays open between takes and each thing said is read once, on this PC, for
-// "Hey Roamies" (wake.rs); hearing it starts a hands-free take. Exits when stdin closes.
+// "Hey Eve" (wake.rs); hearing it starts a hands-free take. Exits when
+// stdin closes.
 //
 // roamies-voice --model <dir> [--chord control,option]   normal use (Roamies starts it)
 // roamies-voice … --ort <library>                          ONNX Runtime to load (default: the one beside this helper,
@@ -18,7 +19,7 @@
 // roamies-voice --devices                                 prints {"type":"devices",…}: every mic, the default, formats
 // roamies-voice --model <dir> --transcribe <wav>          dev: transcribe a file and exit
 // roamies-voice --model <dir> --test-audio <wav>          dev: a file stands in for the mic ({"cmd":"listen"} starts)
-// roamies-voice --model <dir> --test-audio <wav> --wake   dev: the same with the wake word on, so "Hey Roamies" starts
+// roamies-voice --model <dir> --test-audio <wav> --wake   dev: the same with the wake word on, so "Hey Eve" starts
 //                                                         a take (tests/wake_e2e.rs runs it on a spoken recording)
 
 mod audio;
@@ -244,7 +245,8 @@ struct Voice {
     final_until: Option<f64>,
     test_audio: Option<PathBuf>,
     ink: ink::Ink,
-    // Wake word: on in settings; held off while Roamies answers and speaks; resting just after a take.
+    // Wake word: the phrase; on in settings; held off while Roamies answers and speaks;
+    // resting just after a take.
     wake_on: bool,
     wake_hold: bool,
     wake: wake::WakeWord,
@@ -866,7 +868,7 @@ impl Voice {
                 Some("wake") => self.set_wake(msg.get("on").and_then(Value::as_bool) == Some(true)),
                 Some("wake_name") => {
                     let ok = self.wake.set_name(msg.get("word").and_then(Value::as_str));
-                    log(if !ok { "wake name refused" } else if self.wake.custom().is_some() { "wake name: custom" } else { "wake name: Roamies" });
+                    log(if !ok { "wake name refused" } else if self.wake.custom().is_some() { "wake name: custom" } else { "wake name: Eve" });
                 }
                 // Roamies is answering or speaking: don't listen for the phrase (it mustn't wake itself).
                 Some("wake_hold") => self.set_wake_hold(msg.get("on").and_then(Value::as_bool) == Some(true)),
@@ -1190,20 +1192,20 @@ mod tests {
         assert_eq!(v.phase, Phase::Wake);
         assert!(v.source.is_some(), "the mic is open for the phrase");
         let job = heard_something(&mut v, &jobs);
-        v.handle(Ev::Text { take: job.take, text: "Hey Roamies, what time".into(), last: false, wake: true });
+        v.handle(Ev::Text { take: job.take, text: "Hey Eve, what time".into(), last: false, wake: true });
         assert_eq!(v.phase, Phase::HandsFree);
         assert!(v.woke);
         assert_eq!(v.best, "what time");
         assert!(v.source.is_some(), "the same mic carries on into the take");
         // Live reads cover the phrase too; it comes off, also when a later reading of it no longer matches.
-        v.on_text(v.take, "Hey Roamies, what time is it".into(), false);
+        v.on_text(v.take, "Hey Eve, what time is it".into(), false);
         assert_eq!(v.best, "what time is it");
         v.toggle();
         v.tail_until = Some(0.0);
         v.tick();
         let last = jobs.try_recv().expect("a closing read");
         assert!(last.last && !last.wake);
-        v.on_text(last.take, "Hey Romy's, what time is it?".into(), true);
+        v.on_text(last.take, "Hey Eva's, what time is it?".into(), true);
         assert_eq!(v.phase, Phase::Idle);
         assert_eq!(v.best, "what time is it?", "the final text is only the request");
         assert!(!v.woke);
@@ -1221,7 +1223,7 @@ mod tests {
         wake_cmd(&mut v, "wake", true);
         v.tick();
         let job = heard_something(&mut v, &jobs);
-        v.handle(Ev::Text { take: job.take, text: "so I told him hey Roamies".into(), last: false, wake: true });
+        v.handle(Ev::Text { take: job.take, text: "so I told him hey Eve".into(), last: false, wake: true });
         assert_eq!(v.phase, Phase::Wake, "not at the start: no take");
         assert!(!v.wake_reading);
         // Once it's quiet, the next thing said gets its own read; meanwhile only the last moment of sound is kept.
@@ -1242,8 +1244,8 @@ mod tests {
         let job = heard_something(&mut v, &jobs);
         wake_cmd(&mut v, "wake_hold", true);
         assert_eq!(v.phase, Phase::Idle);
-        assert!(v.source.is_none(), "the mic is off while Roamies answers");
-        v.handle(Ev::Text { take: job.take, text: "Hey Roamies".into(), last: false, wake: true });
+        assert!(v.source.is_none(), "the mic is off while E.V. answers");
+        v.handle(Ev::Text { take: job.take, text: "Hey Eve".into(), last: false, wake: true });
         v.tick();
         assert_eq!(v.phase, Phase::Idle, "the read that was under way doesn't wake it");
         wake_cmd(&mut v, "wake_hold", false);
