@@ -1,35 +1,26 @@
-<<<<<<< Updated upstream
-// The wake phrase "Hey E.V." (said "Ee-vee"), or the name alone at the start; kept in step with WakeWord in
-// voice/main.swift.
+// The wake phrase: a greeting ("Hey"), then the name, at the start of something said (the text's start or after a
+// sentence end). E.V. is said "Ee-vee" and is also the one name that wakes on its own, at the very start ("Eevee, what
+// time is it?"); "Roamies" wakes too, but only with the greeting, so "Roamies is great" never does. Kept in step with
+// WakeWord in voice/main.swift.
 
 const GREETINGS: [&str; 5] = ["hey", "hi", "hay", "heya", "hiya"];
-// Every way the recogniser writes E.V.
-const DEFAULT_NAMES: [&str; 3] = ["eve", "eevee", "evie"];
-// One letter off the name, but everyday words: they mustn't wake it without a greeting.
+// Every way the recogniser writes E.V.: the letters, "Eevee", "Evie", "Eve".
+const EVE_NAMES: [&str; 3] = ["eve", "eevee", "evie"];
+// "Roamies", the other name it answers to, with its greeting.
+const ROAMIES_NAMES: [&str; 2] = ["roamies", "roamie"];
+// One letter off E.V., but everyday words: they mustn't wake it without a greeting.
 const NAME_STOP: [&str; 4] = ["even", "ever", "evil", "eves"];
-=======
-// The wake phrase, "Hey Eevee" or "Hey Roamies": a port of WakeWord in voice/main.swift (keep the two in step). A
-// greeting, then the name, at the start of something said (the text's start or after a sentence end). Near-misses the
-// recogniser writes count too ("Evee", "Eevee's", "Evie"; "Romies", "Roomies"). E.V. (the default) is also the one name
-// that wakes on its own, with no greeting ("Eevee, what time is it"); Roamies and a name of the user's own ("Hey
-// Jarvis") still need the greeting, so "Roamies is great" never wakes it.
-
-const GREETINGS: [&str; 5] = ["hey", "hi", "hay", "heya", "hiya"];
-// Both are the default: say either one.
-const DEFAULT_NAMES: [&str; 4] = ["eevee", "evie", "roamies", "roamie"];
-// The default names that also wake with no greeting at all.
-const BARE_NAMES: [&str; 2] = ["eevee", "evie"];
->>>>>>> Stashed changes
 
 pub struct WakeWord {
     names: Vec<String>,
-    /// The chosen name ("Jarvis"); None for E.V.
+    /// The chosen name ("Jarvis"); None for the defaults (E.V. and Roamies).
     custom: Option<String>,
 }
 
 impl Default for WakeWord {
     fn default() -> Self {
-        WakeWord { names: DEFAULT_NAMES.map(String::from).to_vec(), custom: None }
+        let names = EVE_NAMES.iter().chain(ROAMIES_NAMES.iter()).map(|n| n.to_string()).collect();
+        WakeWord { names, custom: None }
     }
 }
 
@@ -50,19 +41,14 @@ impl WakeWord {
         self.custom.as_deref()
     }
 
-<<<<<<< Updated upstream
-    /// None, "" or any spelling of E.V. goes back to E.V.; anything else must be 4-20 letters.
+    /// None, "" or any spelling of E.V. or Roamies goes back to the defaults; anything else must be 4-20 letters.
     pub fn set_name(&mut self, raw: Option<&str>) -> bool {
         let w: String = raw.unwrap_or("").to_lowercase().chars().filter(|c| c.is_alphabetic()).collect();
-        if w.is_empty() || DEFAULT_NAMES.contains(&w.as_str()) || w == "ev" {
-=======
-    /// Sets the name after the greeting; None, "" or one of the defaults goes back to the defaults (Eevee / Roamies).
-    /// Letters only, 4 to 20 of them (the rule in sidecar/wakename.mjs); anything else is refused (returns false) and
-    /// the name stays as it was.
-    pub fn set_name(&mut self, raw: Option<&str>) -> bool {
-        let w: String = raw.unwrap_or("").to_lowercase().chars().filter(|c| c.is_alphabetic()).collect();
-        if w.is_empty() || DEFAULT_NAMES.contains(&w.as_str()) || w == "eve" {
->>>>>>> Stashed changes
+        if w.is_empty()
+            || EVE_NAMES.contains(&w.as_str())
+            || ROAMIES_NAMES.contains(&w.as_str())
+            || w == "ev"
+        {
             *self = WakeWord::default();
             return true;
         }
@@ -76,8 +62,8 @@ impl WakeWord {
         true
     }
 
-<<<<<<< Updated upstream
-    /// Same first letter and a length within one of a spelling: "Eve" takes "Eva" and "Ever", not "Hive".
+    /// Same first letter and a length within one of a spelling: "Eve" takes "Eva" and "Ever", not "Hive"; "Roamies"
+    /// takes "Romies" and "Roomies".
     fn plausible(&self, heard: &str) -> bool {
         let first = heard.chars().next();
         let h = heard.chars().count();
@@ -94,21 +80,6 @@ impl WakeWord {
     }
 
     /// E.V. is short and spelled several ways, so two edits; a user's own name is stricter (0-2 by length).
-=======
-    /// Whether a heard word (within the allowed edits) is shaped like the name.
-    fn plausible(&self, heard: &str) -> bool {
-        match (&self.custom, self.names.first()) {
-            (Some(_), Some(n)) => heard.chars().next() == n.chars().next() && heard.chars().count() + 1 >= n.chars().count(),
-            // The default names: Roamies' tuned rule, or the E.V. one.
-            _ => (heard.starts_with('r') && heard.contains('m') && heard.chars().count() >= 5)
-                || (heard.starts_with('e') && heard.contains('v')),
-        }
-    }
-
-    /// Edits allowed for the next word (one fewer for two words joined). The defaults get two so "Romies" is heard;
-    /// `within` then caps E.V. at one so "Evan" isn't. A short name of the user's own must be heard exactly ("Nova"
-    /// mustn't take "Nora"); 6 or 7 letters allow one edit, longer ones two.
->>>>>>> Stashed changes
     fn allowed_edits(&self) -> i64 {
         let n = self.names.first().map_or(0, |n| n.chars().count());
         if self.custom.is_none() {
@@ -123,19 +94,26 @@ impl WakeWord {
         }
     }
 
-    /// Whether `heard` is close enough to be a name. A name of the user's own uses `allowed` edits; the defaults each
-    /// allow only what they need (Roamies two, so "Romies" wakes it; E.V. one, so "Evan" never does).
-    fn within(&self, heard: &str, allowed: i64) -> bool {
-        if !self.plausible(heard) {
-            return false;
+    /// The closest distance across the names, and whether any is within its own budget: E.V. is short and spelled many
+    /// ways, so two edits; Roamies gets one, so "Romies" wakes it but "Ronnie" doesn't.
+    fn match_name(&self, heard: &str, allowed: i64) -> (usize, bool) {
+        let mut best = usize::MAX;
+        let mut ok = false;
+        for n in &self.names {
+            let room = if self.custom.is_some() {
+                allowed
+            } else if EVE_NAMES.contains(&n.as_str()) {
+                allowed.min(2)
+            } else {
+                allowed.min(1)
+            };
+            let d = edits(heard, n);
+            best = best.min(d);
+            if (d as i64) <= room {
+                ok = true;
+            }
         }
-        if self.custom.is_some() {
-            return (self.distance(heard) as i64) <= allowed;
-        }
-        self.names.iter().any(|n| {
-            let room = if n.chars().count() >= 6 { 2 } else { 1 };
-            (edits(heard, n) as i64) <= allowed.min(room)
-        })
+        (best, ok)
     }
 
     /// What was said after the phrase ("" if nothing yet), or None when the phrase isn't there.
@@ -146,14 +124,24 @@ impl WakeWord {
     /// The match, plus the closest name's edit distance after a greeting (None if no greeting).
     pub fn scan(&self, text: &str) -> Scan {
         let words = tokens(text);
-        // E.V. also wakes on its own, with no greeting: "Eevee, what time is it?". It must be the very first word and
-        // heard exactly (so "Eve is great" doesn't wake it). Roamies needs its greeting, as before.
-        if self.custom.is_none() {
-            if let Some(w) = words.first() {
-                if BARE_NAMES.contains(&w.word.as_str()) {
-                    let rest = text[w.end..].trim_start_matches(|c: char| !c.is_alphanumeric());
-                    return Scan { rest: Some(rest.trim().to_string()), distance: Some(0) };
+        // The name alone, only at the very start ("E.V., open Spotify"); mid-sentence it never wakes. Roamies needs its
+        // greeting, so only E.V.'s spellings are tried here.
+        if self.custom.is_none() && !words.is_empty() {
+            // "Ee vee" must read as the name, not as "ee".
+            let mut best: Option<(usize, usize)> = None;
+            for n in 1..=2.min(words.len()) {
+                let name: String = words[..n].iter().map(|w| w.word.as_str()).collect();
+                if NAME_STOP.contains(&name.as_str()) {
+                    continue;
                 }
+                let d = eve_distance(&name);
+                if d <= 1 && self.plausible(&name) && best.is_none_or(|(bd, _)| d < bd) {
+                    best = Some((d, words[n - 1].end));
+                }
+            }
+            if let Some((d, end)) = best {
+                let rest = text[end..].trim_start_matches(|c: char| !c.is_alphanumeric());
+                return Scan { rest: Some(rest.trim().to_string()), distance: Some(d) };
             }
         }
         let mut closest: Option<usize> = None;
@@ -170,49 +158,26 @@ impl WakeWord {
                 continue;
             }
             let mut candidates = vec![(words[i + 1].word.clone(), words[i + 1].end, self.allowed_edits())];
-<<<<<<< Updated upstream
-            // Split in two ("Ev e"): joined, it must be a closer match.
-=======
-            // Split in two ("Ee vee"): joined, it must be a closer match.
->>>>>>> Stashed changes
+            // Split in two ("Ev e", "Roam ies"): joined, it must be a closer match.
             if i + 2 < words.len() {
                 candidates.push((words[i + 1].word.clone() + &words[i + 2].word, words[i + 2].end, self.allowed_edits() - 1));
             }
             for (name, end, allowed) in candidates {
-                let d = self.distance(&name);
+                let (d, ok) = self.match_name(&name, allowed);
                 closest = Some(closest.map_or(d, |c| c.min(d)));
-                if self.within(&name, allowed) && at_start {
+                if ok && self.plausible(&name) && at_start {
                     let rest = text[end..].trim_start_matches(|c: char| !c.is_alphanumeric());
                     return Scan { rest: Some(rest.trim().to_string()), distance: Some(d) };
                 }
             }
         }
-        // The name alone, only at the very start ("E.V., open Spotify"); mid-sentence it never wakes.
-        if self.custom.is_none() && !words.is_empty() {
-            // "Ee vee" must read as the name, not as "ee".
-            let mut best: Option<(usize, usize)> = None;
-            for n in 1..=2.min(words.len()) {
-                let name: String = words[..n].iter().map(|w| w.word.as_str()).collect();
-                if NAME_STOP.contains(&name.as_str()) {
-                    continue;
-                }
-                let d = self.distance(&name);
-                closest = Some(closest.map_or(d, |c| c.min(d)));
-                if d <= 1 && self.plausible(&name) && best.is_none_or(|(bd, _)| d < bd) {
-                    best = Some((d, words[n - 1].end));
-                }
-            }
-            if let Some((d, end)) = best {
-                let rest = text[end..].trim_start_matches(|c: char| !c.is_alphanumeric());
-                return Scan { rest: Some(rest.trim().to_string()), distance: Some(d) };
-            }
-        }
         Scan { rest: None, distance: closest }
     }
+}
 
-    fn distance(&self, word: &str) -> usize {
-        self.names.iter().map(|n| edits(word, n)).min().unwrap_or(usize::MAX)
-    }
+/// Edit distance to the closest E.V. spelling (for the name-alone wake, which Roamies never gets).
+fn eve_distance(word: &str) -> usize {
+    EVE_NAMES.iter().map(|n| edits(word, n)).min().unwrap_or(usize::MAX)
 }
 
 /// What follows the first n words of the text: the wake phrase as first heard, once a later reading of it no longer
@@ -282,7 +247,6 @@ mod tests {
     fn the_phrase_and_its_near_misses() {
         let w = WakeWord::default();
         for (text, want) in [
-<<<<<<< Updated upstream
             ("Hey Eve", Some("")),
             ("Hey Eve, open Safari.", Some("open Safari.")),
             ("hey eve open safari", Some("open safari")),
@@ -308,12 +272,23 @@ mod tests {
             ("Eve", Some("")),
             ("Eve, open Notes", Some("open Notes")),
             ("Eve is great", Some("is great")),
-            ("I told him hey Eve", None),
+            // Roamies wakes too, but only with the greeting.
+            ("Hey Roamies", Some("")),
+            ("Hey Roamies, open Safari.", Some("open Safari.")),
+            ("hey roamies open safari", Some("open safari")),
+            ("Hey Romies", Some("")),
+            ("Hey Roomies, play some music", Some("play some music")),
+            ("HEY ROAMIES! What's on today?", Some("What's on today?")),
+            ("Hey Ronnie", None),
+            ("Hey Robbie, come here", None),
+            // Roamies on its own never wakes it.
+            ("Roamies", None),
+            ("Roamies is great", None),
+            ("Roamies, open Mail", None),
+            ("I told him hey Evie", None),
             ("So I said hey Eve", None),
             ("Hey I've", None),
             ("Hey Hive", None),
-            ("Hey Roamies", None),
-            ("Hey Roamie", None),
             ("Hey there", None),
             ("Hey", None),
             ("Hey. Eve", None),
@@ -321,43 +296,6 @@ mod tests {
             ("Ever since then", None),
             ("Hey Everest", None),
             ("Evelyn called", None),
-=======
-            ("Hey Eevee", Some("")),
-            ("Hey Eevee, open Safari.", Some("open Safari.")),
-            ("hey eevee open safari", Some("open safari")),
-            ("Hey, Eevee.", Some("")),
-            ("Hi Eevee what time is it?", Some("what time is it?")),
-            ("Hey Evee", Some("")),
-            ("Hey Evie's, open Notes", Some("open Notes")),
-            ("Hey Evie", Some("")),
-            ("Hey Eevee\u{2019} open notes", Some("open notes")),
-            ("HEY EEVEE! What's on today?", Some("What's on today?")),
-            ("That's it. Hey Eevee, open Mail", Some("open Mail")),
-            ("Um hey Eevee, open Mail", Some("open Mail")),
-            ("Okay, hi Eevee", Some("")),
-            ("Hey Travis", None),
-            ("Hey Steve", None),
-            ("Hey Evan", None),
-            ("Hey evening", None),
-            ("I told him hey Eevee", None),
-            ("So I said hey Eevee", None),
-            // Roamies works just the same, with its greeting.
-            ("Hey Roamies", Some("")),
-            ("Hey Roamies, open Safari.", Some("open Safari.")),
-            ("hey roamies open safari", Some("open safari")),
-            ("Hey Romies", Some("")),
-            ("Hey Roamie's, open Notes", Some("open Notes")),
-            ("Hey Roomies, play some music", Some("play some music")),
-            ("HEY ROAMIES! What's on today?", Some("What's on today?")),
-            ("That's it. Hey Roamies, open Mail", Some("open Mail")),
-            ("Um hey Roamies, open Mail", Some("open Mail")),
-            ("Hey Ronnie", None),
-            ("Hey Robbie, come here", None),
-            ("I told him hey Roamies", None),
-            ("So I said hey Roamies", None),
-            ("Hey there", None),
-            ("Hey", None),
->>>>>>> Stashed changes
             ("", None),
         ] {
             check(&w, text, want);
@@ -374,12 +312,12 @@ mod tests {
             ("Evie, play some music", Some("play some music")),
             ("Eevee is great", Some("is great")), // the name alone wakes: that's the trade for a one-word wake word
             // Only the very first word, and heard exactly: a stray "eve" in a sentence never wakes it.
-            ("Eve, open Notes", None),
+            ("Eve, open Notes", Some("open Notes")),
             ("I told Eve to wait", None),
             ("The Eve of the battle", None),
             ("Steve, open Notes", None),
             ("evening all", None),
-            // Roamies needs its greeting, as before: the name alone in a sentence never wakes it.
+            // Roamies never wakes on its own: it needs its greeting.
             ("Roamies", None),
             ("Roamies is great", None),
             ("Roamies, open Mail", None),
@@ -391,9 +329,9 @@ mod tests {
 
     #[test]
     fn dropping_takes_the_first_words_off() {
-        assert_eq!(dropping(2, "Hey Romy's, what time is it?"), "what time is it?");
-        assert_eq!(dropping(2, "Hey Romy's"), "");
-        assert_eq!(dropping(3, "Um hey Romy's open Mail"), "open Mail");
+        assert_eq!(dropping(2, "Hey Evie, what time is it?"), "what time is it?");
+        assert_eq!(dropping(2, "Hey Evie"), "");
+        assert_eq!(dropping(3, "Um hey Evie open Mail"), "open Mail");
         assert_eq!(dropping(0, "open Mail"), "open Mail");
     }
 
@@ -425,13 +363,9 @@ mod tests {
         check(&w, "Hey Nora", None);
         assert!(w.set_name(Some("")));
         assert_eq!(w.custom(), None);
-<<<<<<< Updated upstream
         check(&w, "Hey Eve, open Mail", Some("open Mail"));
-=======
-        check(&w, "Hey Eevee, open Mail", Some("open Mail"));
         check(&w, "Eevee, open Mail", Some("open Mail"));
         check(&w, "Hey Roamies, open Mail", Some("open Mail"));
->>>>>>> Stashed changes
         check(&w, "Hey Jarvis", None);
         assert!(w.set_name(Some("Roamies")), "Roamies is a default name, not a custom one");
         assert_eq!(w.custom(), None);

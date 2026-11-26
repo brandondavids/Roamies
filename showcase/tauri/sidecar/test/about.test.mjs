@@ -9,26 +9,16 @@ const linux = aboutRoamies({ ...base, linux: true, voice: true, wake: true });
 assert.match(mac, /lives in the menu bar at the top of the screen/);
 assert.match(mac, /Show JARVIS, Ask JARVIS…, Ask About an Area…, Stop, Quit Roamies/);
 assert.match(mac, /Look: Roamie, JARVIS or Anime Girl/);
-<<<<<<< Updated upstream
-assert.match(mac, /Live conversation \(one switch: with it on the mic stays on, so saying the wake word \("Hey E\.V\.", or just "E\.V\."\) or "let's talk"/);
-=======
-assert.match(mac, /Wake word \(say "Hey E\.V\.", or just "E\.V\.", or "Hey Roamies",/);
->>>>>>> Stashed changes
+assert.match(mac, /Live conversation \(one switch: with it on the mic stays on, so saying the wake word \("Hey E\.V\.", or just "E\.V\.", or "Hey Roamies"\) or "let's talk"/);
 assert.match(mac, /Voice Provider: Fish Audio, Gemini or VoiceStudio/);
 assert.match(win, /bottom right of the taskbar/);
 assert.ok(!/Ask About an Area|Wake word|Voice Control|Cursor, a little arrow/.test(win), 'features this copy lacks are left out');
 assert.match(linux, /AppIndicator extension/);
 assert.match(linux, /installs? by themselves when Roamies runs as an AppImage/);
-<<<<<<< Updated upstream
 assert.match(linux, /Live conversation \(one switch: with it on the mic stays on, so saying the wake word/, 'the wake word on Windows and Linux too (#97)');
 assert.match(linux, /Wake Word Name \(the word after "Hey"\)/, 'live conversation is on the Listening page (#195)');
 assert.match(aboutRoamies({ ...base, voice: true }), /Live conversation \(one switch: with it on the mic stays on, so "let's talk"/, 'no wake word to offer without one');
 assert.ok(!/Wake by Clap|two sharp claps/.test(mac + linux), 'the clap switch is gone');
-=======
-assert.match(linux, /Wake word \(say "Hey E\.V\.", or just "E\.V\.", or "Hey Roamies",/, 'the wake word on Windows and Linux too (#97)');
-assert.match(linux, /Live conversation \(say the wake word or "let's talk"/, 'live conversation is on the Listening page (#195)');
-assert.match(aboutRoamies({ ...base, voice: true }), /Live conversation \(say "let's talk"/, 'no wake word to offer without one');
->>>>>>> Stashed changes
 // The settings pages as the panel names them (Speaking, Listening, Shortcuts, General since the split; Routines is an Abilities tab).
 assert.match(mac, /Speaking \(Replies:.*Listening \(Voice Control.*Shortcuts \(.*General \(Sound Effects/);
 assert.match(linux, /Shortcuts \(the commands to bind/, 'no global keys there: the commands to bind');

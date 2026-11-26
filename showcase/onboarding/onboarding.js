@@ -564,11 +564,7 @@
       $('fish-change').setAttribute('aria-expanded', String(replies.changing));
       $('fish-save').disabled = replies.saving;
       $('fish-save').textContent = replies.saving ? 'Checking…' : 'Save';
-<<<<<<< Updated upstream
       // Talking hands-free (needs voice): open the mic for an answer, and start a live conversation on "Hey E.V." where there's a wake word.
-=======
-      // Talking hands-free (needs voice): open the mic for an answer, and wake on "Hey E.V." where there's a wake word.
->>>>>>> Stashed changes
       $('talk-rows').hidden = !state?.voice;
       $('wake-row').hidden = !(state?.wakeOk ?? isMac());
       $('autolisten-switch').setAttribute('aria-checked', String(!!state?.autoListen));
