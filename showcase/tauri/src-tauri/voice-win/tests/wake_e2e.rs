@@ -1,5 +1,9 @@
 // The wake word end to end (#97): spoken lines go through the real helper and Parakeet model, each recording standing
+<<<<<<< Updated upstream
 // in for the microphone. "Hey Eve, what time is it?" has to start a take by itself and send only the request;
+=======
+// in for the microphone. "Hey Eevee, what time is it?" has to start a take by itself and send only the request;
+>>>>>>> Stashed changes
 // other talk must not wake it. Needs the speech model and a voice to say the lines, so it's run by hand:
 //   ROAMIES_VOICE_MODEL=<model dir> cargo test --features e2e --test wake_e2e -- --ignored --nocapture
 // (add --release on Windows and Linux; ORT_DYLIB_PATH=<the library fetch-onnxruntime.sh fetched>, unless it's beside
@@ -74,9 +78,15 @@ fn hear(env: &str, line: &str, wait: Duration) -> Option<(bool, Vec<String>)> {
 
 #[test]
 #[ignore = "needs the speech model (ROAMIES_VOICE_MODEL) and a spoken recording"]
+<<<<<<< Updated upstream
 fn hey_eve_starts_a_take_and_only_the_request_is_sent() {
     let Some((woke, finals)) = hear("ROAMIES_WAKE_WAV", "Hey Eve, what time is it?", Duration::from_secs(90)) else { return };
     assert!(woke, "hearing \"Hey Eve\" started a take");
+=======
+fn hey_roamies_starts_a_take_and_only_the_request_is_sent() {
+    let Some((woke, finals)) = hear("ROAMIES_WAKE_WAV", "Hey Eevee, what time is it?", Duration::from_secs(90)) else { return };
+    assert!(woke, "hearing \"Hey Eevee\" started a take");
+>>>>>>> Stashed changes
     let text = finals.first().expect("what was said was sent").to_lowercase();
     assert!(text.contains("what time is it"), "the request was heard: {text:?}");
     assert!(!text.contains("hey"), "the wake phrase isn't part of the request: {text:?}");

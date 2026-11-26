@@ -6,8 +6,12 @@
 // Modifier state is read with CGEventSource, which needs no Input Monitoring permission.
 // While ⌃⌥ is held, moving the cursor draws on the screen (ink.swift); the marked area goes out with what was said.
 // While listening, a small voice-bar pill rides beside the cursor (wave.swift) instead of a transcript bubble.
+<<<<<<< Updated upstream
 // With the wake word on, it also listens quietly for "Hey Eve" and
 // starts a hands-free take on hearing it.
+=======
+// With the wake word on, it also listens quietly for "Hey Eevee" and starts a hands-free take on hearing it.
+>>>>>>> Stashed changes
 import AVFoundation
 import AppKit
 import CoreAudio
@@ -64,7 +68,11 @@ func log(_ s: String) {
     FileHandle.standardError.write(Data("[voice] \(s)\n".utf8))
 }
 
+<<<<<<< Updated upstream
 // Wake lines carry the time, so a missed "Hey Eve" can be matched to when it was said.
+=======
+// Wake lines carry the time, so a missed "Hey Eevee" can be matched to when it was said.
+>>>>>>> Stashed changes
 private let clock: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f }()
 func wakeLog(_ s: String) { log("wake \(clock.string(from: Date())): \(s)") }
 
@@ -200,7 +208,11 @@ final class AnalyzerRecognizer: Recognizer {
                 let tr = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
                 let a = SpeechAnalyzer(modules: [tr])
                 analyzer = a
+<<<<<<< Updated upstream
                 // Lean toward the app's names, as contextualStrings does for the older recogniser ("Hey Eve").
+=======
+                // Lean toward the app's names, as contextualStrings does for the older recogniser ("Hey Eevee").
+>>>>>>> Stashed changes
                 let context = AnalysisContext()
                 context.contextualStrings[.general] = WakeWord.hints
                 try? await a.setContext(context)
@@ -474,6 +486,7 @@ final class AutoGain {
     }
 }
 
+<<<<<<< Updated upstream
 // The wake phrase "Hey E.V." (said "Ee-vee"), or the name alone at the start; kept in step with wake.rs.
 enum WakeWord {
     static let greetings: Set<String> = ["hey", "hi", "hay", "heya", "hiya"]
@@ -491,12 +504,37 @@ enum WakeWord {
     @discardableResult static func setName(_ raw: String?) -> Bool {
         let w = (raw ?? "").lowercased().filter { $0.isLetter }
         if w.isEmpty || defaultNames.contains(w) || w == "ev" { names = defaultNames; custom = nil; return true }
+=======
+// The wake phrase, "Hey Eevee" or "Hey Roamies": a greeting, then the name, at the start of something said (the
+// text's start or after a sentence end). Near-misses the recogniser really writes count too ("Evee", "Evie's", "Evie";
+// "Romies", "Roomies"). E.V. (the default) is also the one name that wakes on its own, with no greeting ("Eevee, what
+// time is it"); Roamies and a name of the user's own ("Hey Jarvis") still need the greeting, so "Roamies is great"
+// never wakes it.
+enum WakeWord {
+    static let greetings: Set<String> = ["hey", "hi", "hay", "heya", "hiya"]
+    // Both are the default: say either one.
+    static let defaultNames = ["eevee", "evie", "roamies", "roamie"]
+    // The default names that also wake with no greeting at all.
+    static let bareNames: Set<String> = ["eevee", "evie"]
+    // Set and read on the main thread.
+    private(set) static var names = defaultNames
+    /// The chosen name as a word for the recogniser's hints ("Jarvis"); nil for the defaults.
+    private(set) static var custom: String?
+    static var hints: [String] { ["Eevee", "Evie", "Roamies", "Roamie"] + (custom.map { [$0] } ?? []) }
+
+    /// Sets the name after the greeting; nil, "" or one of the defaults goes back to the defaults (Eevee / Roamies).
+    /// Letters only, 4 to 20 of them; anything else is refused (returns false) and the name stays as it was.
+    @discardableResult static func setName(_ raw: String?) -> Bool {
+        let w = (raw ?? "").lowercased().filter { $0.isLetter }
+        if w.isEmpty || defaultNames.contains(w) || w == "eve" { names = defaultNames; custom = nil; return true }
+>>>>>>> Stashed changes
         guard w.count >= 4, w.count <= 20 else { return false }
         names = [w]
         custom = w.prefix(1).uppercased() + w.dropFirst()
         return true
     }
 
+<<<<<<< Updated upstream
     /// Same first letter and a length within one of a spelling: "Eve" takes "Eva" and "Ever", not "Hive".
     static func plausible(_ heard: String) -> Bool {
         guard let first = heard.first else { return false }
@@ -508,17 +546,41 @@ enum WakeWord {
     }
 
     /// E.V. is short and spelled several ways, so two edits; a user's own name is stricter (0-2 by length).
+=======
+    /// Whether a heard word (within the allowed edits) is shaped like the name.
+    static func plausible(_ heard: String) -> Bool {
+        guard custom != nil, let n = names.first else {
+            return (heard.hasPrefix("r") && heard.contains("m") && heard.count >= 5) || (heard.hasPrefix("e") && heard.contains("v"))
+        }
+        return heard.first == n.first && heard.count >= n.count - 1
+    }
+
+    /// Edits allowed for the next word, and one fewer for two words joined ("Ee vee"). The defaults get two so
+    /// "Romies" is heard; `within` then caps E.V. at one so "Evan" isn't. A short name of the user's own must be heard
+    /// exactly ("Nova" mustn't take "Nora"); 6 or 7 letters allow one edit, longer ones two.
+>>>>>>> Stashed changes
     static var allowedEdits: Int {
         let n = names.first?.count ?? 0
         if custom == nil { return 2 }
         return n >= 8 ? 2 : n >= 6 ? 1 : 0
     }
 
+    /// Whether `heard` is close enough to be a name. A name of the user's own uses `allowed` edits; the defaults each
+    /// allow only what they need (Roamies two, so "Romies" wakes it; E.V. one, so "Evan" never does).
+    static func within(_ heard: String, _ allowed: Int) -> Bool {
+        guard plausible(heard) else { return false }
+        if custom != nil { return distance(heard) <= allowed }
+        return names.contains { n in
+            let room = n.count >= 6 ? 2 : 1
+            return edits(heard, n) <= min(allowed, room)
+        }
+    }
+
     /// What was said after the phrase ("" if nothing yet), or nil when the phrase isn't there.
     static func match(_ text: String) -> String? { scan(text).rest }
 
     /// What follows the first n words of the text: the wake phrase as first heard, once a later reading of it no
-    /// longer matches ("Hey Romies" revised to "Hey Romy is"), so it still isn't sent as part of the request.
+    /// longer matches ("Hey Evie" revised to "Hey Eevee is"), so it still isn't sent as part of the request.
     static func dropping(_ n: Int, from text: String) -> String {
         let words = tokens(text)
         guard n > 0 else { return text }
@@ -530,20 +592,26 @@ enum WakeWord {
     /// but it looks like a try, why it missed (for the log: never the words themselves).
     static func scan(_ text: String) -> (rest: String?, distance: Int?, miss: String?) {
         let words = tokens(text)
+        // E.V. also wakes on its own, with no greeting: "Eevee, what time is it?". It must be the very first word and
+        // heard exactly (so "Eve is great" doesn't wake it). Roamies needs its greeting, as before.
+        if custom == nil, let w = words.first, bareNames.contains(w.word) {
+            let rest = text[w.range.upperBound...].drop(while: { !$0.isLetter && !$0.isNumber })
+            return (String(rest).trimmingCharacters(in: .whitespacesAndNewlines), 0, nil)
+        }
         var closest: Int?, late = false
         for (i, w) in words.enumerated() where greetings.contains(w.word) && i + 1 < words.count {
             let before = text[(i == 0 ? text.startIndex : words[i - 1].range.upperBound) ..< w.range.lowerBound]
             // Up to two stray words may come first ("um", "okay", a cough heard as "the"); live text rarely has a full stop.
             let atStart = i <= 2 || before.contains(where: { ".?!".contains($0) })
-            // Only spaces or a comma between greeting and name ("Hey, Roamies").
+            // Only spaces or a comma between greeting and name ("Hey, Eevee").
             guard text[w.range.upperBound ..< words[i + 1].range.lowerBound].allSatisfy({ $0 == " " || $0 == "," }) else { continue }
             var candidates = [(words[i + 1].word, words[i + 1].range.upperBound, allowedEdits)]
-            // Split in two ("Roam ies"): joined, it must be a closer match.
+            // Split in two ("Ee vee"): joined, it must be a closer match.
             if i + 2 < words.count { candidates.append((words[i + 1].word + words[i + 2].word, words[i + 2].range.upperBound, allowedEdits - 1)) }
             for (name, end, allowed) in candidates {
                 let d = distance(name)
                 closest = min(closest ?? d, d)
-                if d <= allowed && plausible(name) {
+                if within(name, allowed) {
                     guard atStart else { late = true; continue }
                     let rest = text[end...].drop(while: { !$0.isLetter && !$0.isNumber })
                     return (String(rest).trimmingCharacters(in: .whitespacesAndNewlines), d, nil)
@@ -567,11 +635,16 @@ enum WakeWord {
         }
         if late { return (nil, closest, "the phrase came after other words") }
         if let c = closest, c <= 4 { return (nil, closest, "a greeting, then a name \(c) letters off") }
+<<<<<<< Updated upstream
         // A name of the user's own still needs its greeting; only the app's own works alone.
         if custom != nil {
             let initial = names.first?.first ?? "r"
             if words.contains(where: { $0.word.first == initial && distance($0.word) <= 2 }) { return (nil, closest, "the name without a greeting") }
         }
+=======
+        let initial = names.first?.first ?? "e"
+        if words.contains(where: { $0.word.first == initial && distance($0.word) <= 2 }) { return (nil, closest, "the name without a greeting") }
+>>>>>>> Stashed changes
         return (nil, closest, nil)
     }
 
@@ -611,8 +684,12 @@ enum WakeWord {
 }
 
 final class Voice {
+<<<<<<< Updated upstream
     // wake: listening quietly for "Hey Eve" (no pill, nothing muted); hearing it turns into
     // a hands-free take.
+=======
+    // wake: listening quietly for "Hey Eevee" (no pill, nothing muted); hearing it turns into a hands-free take.
+>>>>>>> Stashed changes
     enum Phase { case idle, wake, armed, holding, handsFree, finishing }
 
     private var phase = Phase.idle
@@ -821,7 +898,11 @@ final class Voice {
             if chord && !prevChord && !blocked { stopWake(); arm(now); return }
             if !wakeOn || wakeHold { stopWake(); return } // while Roamies answers, the mic stays open but unheard
             let paused = !wakeText.isEmpty && now - heardAt > Self.wakePause && now - voiceAt > Self.wakePause / 2
+<<<<<<< Updated upstream
             // The 30 s refresh waits for a quiet moment, so it can't split "Hey" from "Eve".
+=======
+            // The 30 s refresh waits for a quiet moment, so it can't split "Hey" from "Eevee".
+>>>>>>> Stashed changes
             let quiet = now - voiceAt > Self.wakePause / 2 && now - heardAt > Self.wakePause
             if paused || (now - wakeAt > Self.wakeRecycle && quiet) || now - wakeAt > Self.wakeRecycle * 2 { recycleWake(now) }
         case .armed:
@@ -1311,6 +1392,7 @@ if args.contains("--test-wake") {
         print("\(got == want ? "ok" : "FAIL") \"\(text)\" -> \(got.map { "\"\($0)\"" } ?? "no wake")")
         if got != want { bad += 1 }
     }
+<<<<<<< Updated upstream
     check("Hey Eve", "")
     check("Hey Eve, open Safari.", "open Safari.")
     check("hey eve open safari", "open safari")
@@ -1349,12 +1431,63 @@ if args.contains("--test-wake") {
     check("Ever since then", nil)
     check("Hey Everest", nil)
     check("Evelyn called", nil)
+=======
+    check("Hey Eevee", "")
+    check("Hey Eevee, open Safari.", "open Safari.")
+    check("hey eevee open safari", "open safari")
+    check("Hey, Eevee.", "")
+    check("Hi Eevee what time is it?", "what time is it?")
+    check("Hey Evee", "")
+    check("Hey Evie's, open Notes", "open Notes")
+    check("Hey Evie", "")
+    check("Hey Eevee\u{2019} open notes", "open notes")
+    check("HEY EEVEE! What's on today?", "What's on today?")
+    check("That's it. Hey Eevee, open Mail", "open Mail")
+    check("Um hey Eevee, open Mail", "open Mail")
+    check("Okay, hi Eevee", "")
+    check("Hey Travis", nil)
+    check("Hey Steve", nil)
+    check("Hey Evan", nil)
+    check("Hey evening", nil)
+    check("I told him hey Eevee", nil)
+    check("So I said hey Eevee", nil)
+    // Roamies works just the same, with its greeting.
+    check("Hey Roamies", "")
+    check("Hey Roamies, open Safari.", "open Safari.")
+    check("hey roamies open safari", "open safari")
+    check("Hey Romies", "")
+    check("Hey Roomies, play some music", "play some music")
+    check("HEY ROAMIES! What's on today?", "What's on today?")
+    check("Um hey Roamies, open Mail", "open Mail")
+    check("Hey Ronnie", nil)
+    check("Hey Robbie, come here", nil)
+    check("I told him hey Roamies", nil)
+    check("Hey there", nil)
+    check("Hey", nil)
+>>>>>>> Stashed changes
     check("", nil)
+    // E.V. also wakes on the name alone, heard exactly, as the very first word. Roamies never does.
+    check("Eevee", "")
+    check("Eevee, what time is it?", "what time is it?")
+    check("eevee open safari", "open safari")
+    check("Evie, play some music", "play some music")
+    check("Eve, open Notes", nil)
+    check("I told Eve to wait", nil)
+    check("Steve, open Notes", nil)
+    check("Roamies", nil)
+    check("Roamies is great", nil)
+    check("Roamies, open Mail", nil)
     // A later reading of the take that no longer matches the phrase: its words still come off.
     func dropped(_ n: Int, _ text: String, _ want: String) { let got = WakeWord.dropping(n, from: text); print("\(got == want ? "ok" : "FAIL") drop \(n) \"\(text)\" -> \"\(got)\""); if got != want { bad += 1 } }
+<<<<<<< Updated upstream
     dropped(2, "Hey Eva's, what time is it?", "what time is it?")
     dropped(2, "Hey Eva's", "")
     dropped(3, "Um hey Eva's open Mail", "open Mail")
+=======
+    dropped(2, "Hey Evie, what time is it?", "what time is it?")
+    dropped(2, "Hey Evie", "")
+    dropped(3, "Um hey Evie open Mail", "open Mail")
+>>>>>>> Stashed changes
     dropped(0, "open Mail", "open Mail")
     // A name of the user's own.
     func named(_ ok: Bool, _ name: String) { let got = WakeWord.setName(name); print("\(got == ok ? "ok" : "FAIL") name \"\(name)\" \(ok ? "taken" : "refused")"); if got != ok { bad += 1 } }
@@ -1370,15 +1503,29 @@ if args.contains("--test-wake") {
     check("Hey Jar vis, hello", "hello")
     check("Hey Travis", nil)
     check("Hey Service", nil)
+<<<<<<< Updated upstream
     check("Hey Eve", nil) // the default name is off while a custom one is on
+=======
+    check("Hey Eevee", nil)
+    check("Hey Roamies", nil)
+>>>>>>> Stashed changes
     check("Jarvis is great", nil)
+    check("Jarvis, open Notes", nil)
     check("I told him hey Jarvis", nil)
     named(true, "Nova")
     check("Hey Nova, play music", "play music")
     check("Hey Nora", nil) // a short name must be heard exactly
     named(true, "")
+<<<<<<< Updated upstream
     check("Hey Eve, open Mail", "open Mail")
+=======
+    check("Hey Eevee, open Mail", "open Mail")
+    check("Eevee, open Mail", "open Mail")
+    check("Hey Roamies, open Mail", "open Mail")
+>>>>>>> Stashed changes
     check("Hey Jarvis", nil)
+    named(true, "Roamies") // a default name, not a custom one
+    check("Hey Roamies, open Mail", "open Mail")
     exit(bad == 0 ? 0 : 1)
 }
 // --test-snap checks which drawn paths count as a circled area; exits 1 on a failure.
@@ -1577,10 +1724,17 @@ Thread.detachNewThread {
         // The listening pill beside the cursor: off while the notch capsule shows it instead.
         case "pill": if let on = msg["on"] as? Bool { DispatchQueue.main.async { voice.wave.off = !on; if !on { voice.wave.hide() } } }
         case "wake": if let on = msg["on"] as? Bool { DispatchQueue.main.async { voice.setWake(on) } }
+<<<<<<< Updated upstream
         // The name after "Hey" (empty: Eve). Only whether it's custom is logged, never the word.
         case "wake_name":
             let word = msg["word"] as? String ?? ""
             DispatchQueue.main.async { log(WakeWord.setName(word) ? "wake name: \(WakeWord.custom == nil ? "Eve" : "custom")" : "wake name refused") }
+=======
+        // The name after "Hey" (empty: E.V.). Only whether it's custom is logged, never the word.
+        case "wake_name":
+            let word = msg["word"] as? String ?? ""
+            DispatchQueue.main.async { log(WakeWord.setName(word) ? "wake name: \(WakeWord.custom == nil ? "E.V." : "custom")" : "wake name refused") }
+>>>>>>> Stashed changes
         // Roamies is answering or speaking: don't listen for the phrase (it mustn't wake itself).
         case "wake_hold": let on = msg["on"] as? Bool == true; DispatchQueue.main.async { voice.wakeHold = on }
         case "mute": if let on = msg["on"] as? Bool { DispatchQueue.main.async { OutputMute.enabled = on; if !on { OutputMute.end() } } }
