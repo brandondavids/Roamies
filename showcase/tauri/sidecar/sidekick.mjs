@@ -193,7 +193,7 @@ const LOOK_STYLE = {
   sarah: 'friendly, easygoing and kind, like a good friend.',
   adrian: 'relaxed and straight-talking, a steady mate who keeps it simple.',
   rita: 'a sharp, organised secretary: crisp, efficient and a touch sassy.',
-  ev: 'calm, dry and quietly funny: a composed AI with quick wit, short sure lines and the occasional light barb that lands soft.',
+  ev: 'clear, calm and quietly funny, with a dry wit that never aims at anyone.',
 };
 const VOICE_OK = hasVoice(process.platform);
 // Windows and Linux have no on-device speech API apps can use, so voice there runs Parakeet on the PC. Its model
