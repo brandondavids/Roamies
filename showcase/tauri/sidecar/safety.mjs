@@ -479,8 +479,9 @@ export async function checkFetch(url, { lookup = dns.lookup } = {}) {
   return verdict(SAFE);
 }
 
-/** A link the user clicked in a reply: opened in their browser, so web and mail links only (no file:, apps or scripts). */
-export function checkLink(url) {
+/** A link the user clicked in a reply: opened in their browser or the app that claims it, so web, mail and the
+ *  media apps' own links only (no file:, shell: or scripts). */
+export function checkLink(url, { home = null, executable = false } = {}) {
   let u;
   try { u = new URL(String(url)); } catch { return verdict(BLOCK, "That isn't a valid link."); }
   const scheme = u.protocol.replace(/:$/, '');
